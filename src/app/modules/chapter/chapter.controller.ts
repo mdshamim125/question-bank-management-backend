@@ -23,6 +23,7 @@ const getAllChapters = catchAsync(async (_req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
+    message: 'Chapters retrieved successfully',
     data: result,
   });
 });
@@ -34,6 +35,7 @@ const getChapterById = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
+    message: 'Chapter retrieved successfully',
     data: result,
   });
 });

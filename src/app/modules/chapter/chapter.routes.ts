@@ -19,7 +19,7 @@ router.post(
 router.get('/', ChapterController.getAllChapters);
 router.get('/:id', ChapterController.getChapterById);
 
-router.put(
+router.patch(
   '/:id',
   validateRequest(updateChapterSchema),
   ChapterController.updateChapter,

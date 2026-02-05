@@ -61,6 +61,7 @@ model Class {
   subjects  Subject[]
   teachers  User[]  @relation("TeacherClasses")
   chapters  Chapter[] 
+  teacherSubjects TeacherSubject[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -105,16 +106,19 @@ model Chapter {
 // TEACHER ↔ SUBJECT
 // =====================
 model TeacherSubject {
-  id        Int     @id @default(autoincrement())
+  id        Int @id @default(autoincrement())
+
+  teacherId Int
+  subjectId Int
+  classId   Int
 
   teacher   User    @relation(fields: [teacherId], references: [id])
-  teacherId Int
-
   subject   Subject @relation(fields: [subjectId], references: [id])
-  subjectId Int
+  class     Class   @relation(fields: [classId], references: [id])
 
-  @@unique([teacherId, subjectId])
+  @@unique([teacherId, subjectId, classId])
 }
+
 
 // =====================
 // QUESTION (ROOT)

@@ -7,6 +7,8 @@ import { upload } from '../middlewares/upload';
 import { SubjectRoutes } from '../modules/subject/subject.routes';
 import { ClassRoutes } from '../modules/class/class.routes';
 import { UserRouters } from '../modules/user/user.routes';
+import { ChapterRoutes } from '../modules/chapter/chapter.routes';
+import { TeacherSubjectRoutes } from '../modules/teacherSubject/teacherSubject.routes';
 
 const router: Router = express.Router();
 
@@ -31,6 +33,14 @@ const moduleRoutes: ModuleRoute[] = [
   {
     path: '/classes',
     route: ClassRoutes,
+  },
+  {
+    path: '/chapters',
+    route: ChapterRoutes,
+  },
+  {
+    path: '/teacher-subjects',
+    route: TeacherSubjectRoutes,
   },
 ];
 

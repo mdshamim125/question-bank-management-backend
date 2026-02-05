@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================
+// USERS & ROLES
+// =====================
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRoleEnum @default(TEACHER)
+
+  classes   Class[] @relation("TeacherClasses")
+  teacherSubjects TeacherSubject[]
+
+  questions Question[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserRoleEnum {
+  SUPERADMIN
+  ADMIN
+  TEACHER
+}
+
+// =====================
+// PERMISSIONS (RBAC)
+// =====================
+model Permission {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  role         UserRoleEnum
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  permissionId Int
+
+  @@unique([role, permissionId])
+}
+
+// =====================
+// CLASSES & SUBJECTS
+// =====================
+model Class {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+
+  subjects  Subject[]
+  teachers  User[]  @relation("TeacherClasses")
+  chapters  Chapter[] 
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Subject {
+  id        Int      @id @default(autoincrement())
+  name      String
+
+  class     Class    @relation(fields: [classId], references: [id])
+  classId   Int
+
+  teachers  TeacherSubject[]
+  questions Question[]
+  chapters  Chapter[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// =====================
+// CHAPTER
+// =====================
+model Chapter {
+  id        Int      @id @default(autoincrement())
+  name      String
+
+  class     Class    @relation(fields: [classId], references: [id])
+  classId   Int
+
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+  subjectId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, classId, subjectId]) // Optional: prevent duplicate chapter names for same class & subject
+}
+
+
+// =====================
+// TEACHER ↔ SUBJECT
+// =====================
+model TeacherSubject {
+  id        Int     @id @default(autoincrement())
+
+  teacher   User    @relation(fields: [teacherId], references: [id])
+  teacherId Int
+
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  subjectId Int
+
+  @@unique([teacherId, subjectId])
+}
+
+// =====================
+// QUESTION (ROOT)
+// =====================
+model Question {
+  id           Int          @id @default(autoincrement())
+  type         QuestionType
+
+  subject      Subject      @relation(fields: [subjectId], references: [id])
+  subjectId    Int
+
+  createdBy    User         @relation(fields: [createdById], references: [id])
+  createdById  Int
+
+  objective    ObjectiveQuestion?
+  anahote      AnahoteQuestion?
+  srijonshil   SrijonshilQuestion?
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+enum QuestionType {
+  OBJECTIVE
+  ANAHOTE
+  SRIJONSHIL
+}
+
+// =====================
+// OBJECTIVE QUESTION
+// =====================
+model ObjectiveQuestion {
+  id              Int      @id @default(autoincrement())
+  questionText    String
+
+  question        Question @relation(fields: [questionId], references: [id])
+  questionId      Int      @unique
+
+  options         Option[]
+  answerOptionId  Int
+}
+
+model Option {
+  id                   Int      @id @default(autoincrement())
+  text                 String
+
+  objectiveQuestion    ObjectiveQuestion @relation(fields: [objectiveQuestionId], references: [id])
+  objectiveQuestionId  Int
+}
+
+// =====================
+// ANAHOTE QUESTION
+// =====================
+model AnahoteQuestion {
+  id           Int      @id @default(autoincrement())
+  questionText String
+
+  question     Question @relation(fields: [questionId], references: [id])
+  questionId   Int      @unique
+}
+
+// =====================
+// SRIJONSHIL (CREATIVE)
+// =====================
+model SrijonshilQuestion {
+  id          Int      @id @default(autoincrement())
+  prompt      String
+  difficulty  Difficulty
+
+  question    Question @relation(fields: [questionId], references: [id])
+  questionId  Int      @unique
+
+  subQuestions SubQuestion[]
+}
+
+model SubQuestion {
+  id                   Int      @id @default(autoincrement())
+  srijonshilQuestion   SrijonshilQuestion @relation(fields: [srijonshilQuestionId], references: [id])
+  srijonshilQuestionId Int
+
+  questionText         String
+  hint                 String?
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}

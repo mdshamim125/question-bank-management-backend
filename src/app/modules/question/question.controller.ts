@@ -6,7 +6,6 @@ import AppError from '../../errors/AppError';
 import { ITokenUser } from '../../interface/auth.interface';
 
 // CREATE QUESTION
-// CREATE QUESTION
 const createQuestion = catchAsync(async (req: Request, res: Response) => {
   const user = req.user as ITokenUser; // ensure user is attached by auth middleware
   if (!user) {
@@ -22,7 +21,28 @@ const createQuestion = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// GET QUESTIONS BY SUBJECT AND CHAPTER
+// UPDATE QUESTION
+const updateQuestion = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user as ITokenUser;
+  const questionId = Number(req.params.id);
+
+  if (!questionId) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'questionId is required');
+  }
+
+  const result = await QuestionService.updateQuestion(
+    questionId,
+    req.body,
+    user,
+  );
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: 'Question updated successfully',
+    data: result,
+  });
+});
+
 // GET QUESTIONS BY CLASS, SUBJECT, CHAPTER AND TYPE
 const getQuestionsBySubjectAndChapter = catchAsync(
   async (req: Request, res: Response) => {
@@ -43,7 +63,7 @@ const getQuestionsBySubjectAndChapter = catchAsync(
       classId,
       subjectId,
       chapterId,
-      type
+      type,
     );
 
     res.status(httpStatus.OK).json({
@@ -51,11 +71,29 @@ const getQuestionsBySubjectAndChapter = catchAsync(
       message: 'Questions retrieved successfully',
       data: result,
     });
-  }
+  },
 );
 
+// DELETE QUESTION
+const deleteQuestion = catchAsync(async (req: Request, res: Response) => {
+  const questionId = Number(req.params.id);
+
+  if (!questionId) {
+    throw new Error('Question id is required');
+  }
+
+  const result = await QuestionService.deleteQuestion(questionId, req.user!);
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: 'Question deleted successfully',
+    data: result,
+  });
+});
 
 export const QuestionController = {
   createQuestion,
   getQuestionsBySubjectAndChapter,
+  updateQuestion,
+  deleteQuestion,
 };

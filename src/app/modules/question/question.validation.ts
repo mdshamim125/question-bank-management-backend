@@ -34,3 +34,40 @@ export const createQuestionSchema = z.discriminatedUnion('type', [
     ),
   }),
 ]);
+
+export const updateQuestionSchema = z.discriminatedUnion('type', [
+  /**
+   * OBJECTIVE UPDATE
+   */
+  z.object({
+    type: z.literal('OBJECTIVE'),
+    questionText: z.string().optional(),
+    options: z.array(z.string()).length(4).optional(),
+    answerOptionIndex: z.number().min(0).max(3).optional(),
+  }),
+
+  /**
+   * ANAHOTE UPDATE
+   */
+  z.object({
+    type: z.literal('ANAHOTE'),
+    questionText: z.string().optional(),
+  }),
+
+  /**
+   * SRIJONSHIL UPDATE
+   */
+  z.object({
+    type: z.literal('SRIJONSHIL'),
+    prompt: z.string().optional(),
+    difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
+    subQuestions: z
+      .array(
+        z.object({
+          questionText: z.string(),
+          hint: z.string().optional(),
+        }),
+      )
+      .optional(),
+  }),
+]);

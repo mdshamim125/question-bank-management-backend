@@ -20,4 +20,19 @@ router.get(
   QuestionController.getQuestionsBySubjectAndChapter, // Handles classId, subjectId, chapterId via query params
 );
 
+// =====================
+router.patch(
+  '/:id',
+  auth('TEACHER', 'ADMIN', 'SUPERADMIN'),
+  // validateRequest(updateQuestionSchema),
+  QuestionController.updateQuestion,
+);
+
+// DELETE QUESTION
+router.delete(
+  '/:id',
+  auth('TEACHER', 'ADMIN', 'SUPERADMIN'),
+  QuestionController.deleteQuestion,
+);
+
 export const QuestionRoutes = router;

@@ -9,11 +9,14 @@ import { verifyToken } from '../utils/verifyToken';
 const auth = (...roles: string[]) => {
   return async (req: Request, _res: Response, next: NextFunction) => {
     try {
-      const token = req.headers.authorization;
+      const token =
+        req.headers.authorization?.split(' ')[1] || req.headers.authorization;
 
       if (!token) {
         throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
       }
+
+      // console.log(token);
 
       const verifyUserToken = verifyToken(
         token,
@@ -23,7 +26,7 @@ const auth = (...roles: string[]) => {
       // Check user is exist
       const user = await prisma.user.findUniqueOrThrow({
         where: {
-          id: verifyUserToken.id,
+          id: Number(verifyUserToken.id),
         },
       });
 

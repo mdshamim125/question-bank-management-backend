@@ -17,10 +17,10 @@
 // export default validateRequest;
 
 import { NextFunction, Request, Response } from 'express';
-import { AnyZodObject } from 'zod';
+import { ZodTypeAny  } from 'zod';
 
 const validateRequest =
-  (schema: AnyZodObject) =>
+  (schema: ZodTypeAny ) =>
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // parse req.body directly

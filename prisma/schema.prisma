@@ -225,3 +225,19 @@ enum Difficulty {
   MEDIUM
   HARD
 }
+
+
+model QuestionHeader {
+  id         Int      @id @default(autoincrement())
+  schoolName String
+  location   String
+  className  String
+  subject    String
+  examType   String
+  duration   String
+  fullMark   Int
+  remark    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+

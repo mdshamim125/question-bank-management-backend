@@ -4,6 +4,7 @@ import { QuestionService } from './question.service';
 import catchAsync from '../../utils/catchAsync';
 import AppError from '../../errors/AppError';
 import { ITokenUser } from '../../interface/auth.interface';
+import { QuestionFilters, QuestionTypeEnum } from './question.interface';
 
 // CREATE QUESTION
 const createQuestion = catchAsync(async (req: Request, res: Response) => {
@@ -91,9 +92,80 @@ const deleteQuestion = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getAllQuestionsWithFiltering = catchAsync(
+  async (req: Request, res: Response) => {
+    const filters = {
+      classId: req.query.classId ? Number(req.query.classId) : undefined,
+      subjectId: req.query.subjectId ? Number(req.query.subjectId) : undefined,
+      chapterId: req.query.chapterId ? Number(req.query.chapterId) : undefined,
+      type: req.query.type as string | undefined,
+    };
+
+    const result = await QuestionService.getAllQuestionsWithFiltering(filters);
+
+    res.status(httpStatus.OK).json({
+      success: true,
+      message: 'Questions retrieved successfully',
+      data: result,
+    });
+  },
+);
+
+const getAllQuestionsFromDBWithPagination = catchAsync(async (req, res) => {
+  const filters: QuestionFilters = {
+    classId: req.query.classId ? Number(req.query.classId) : undefined,
+    subjectId: req.query.subjectId ? Number(req.query.subjectId) : undefined,
+    chapterId: req.query.chapterId ? Number(req.query.chapterId) : undefined,
+    type: req.query.type as QuestionTypeEnum | undefined, // ✅ FIX
+    search: req.query.search as string | undefined,
+  };
+
+  const options = {
+    page: req.query.page,
+    limit: req.query.limit,
+    sortBy: req.query.sortBy,
+    sortOrder: req.query.sortOrder,
+  };
+
+  const result = await QuestionService.getAllQuestionsFromDBWithPagination(
+    filters,
+    options,
+  );
+
+  res.status(200).json({
+    success: true,
+    message: 'Questions fetched successfully',
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
+const getQuestionById = catchAsync(async (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!id) {
+    throw new AppError(400, 'Question ID is required');
+  }
+
+  const result = await QuestionService.getQuestionByIdFromDB(id);
+
+  if (!result) {
+    throw new AppError(404, 'Question not found');
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Question fetched successfully',
+    data: result,
+  });
+});
+
 export const QuestionController = {
   createQuestion,
   getQuestionsBySubjectAndChapter,
   updateQuestion,
+  getAllQuestionsWithFiltering,
+  getAllQuestionsFromDBWithPagination,
   deleteQuestion,
+  getQuestionById,
 };

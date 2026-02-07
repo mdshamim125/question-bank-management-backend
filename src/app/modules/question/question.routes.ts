@@ -14,10 +14,22 @@ router.post(
 );
 
 // GET questions by class, subject, and chapter
+// router.get(
+//   '/',
+//   auth('TEACHER', 'ADMIN', 'SUPERADMIN'),
+//   QuestionController.getQuestionsBySubjectAndChapter, // Handles classId, subjectId, chapterId via query params
+// );
+
+// router.get(
+//   '/',
+//   auth('TEACHER', 'ADMIN', 'SUPERADMIN'),
+//   QuestionController.getAllQuestionsWithFiltering, // Handles classId, subjectId, chapterId via query params
+// );
+
 router.get(
   '/',
   auth('TEACHER', 'ADMIN', 'SUPERADMIN'),
-  QuestionController.getQuestionsBySubjectAndChapter, // Handles classId, subjectId, chapterId via query params
+  QuestionController.getAllQuestionsFromDBWithPagination, // Handles pagination and filtering
 );
 
 // =====================
@@ -33,6 +45,12 @@ router.delete(
   '/:id',
   auth('TEACHER', 'ADMIN', 'SUPERADMIN'),
   QuestionController.deleteQuestion,
+);
+
+router.get(
+  '/:id',
+  auth('TEACHER', 'ADMIN', 'SUPERADMIN'),
+  QuestionController.getQuestionById,
 );
 
 export const QuestionRoutes = router;

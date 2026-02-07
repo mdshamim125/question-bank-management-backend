@@ -164,7 +164,6 @@ enum QuestionType {
 model ObjectiveQuestion {
   id              Int      @id @default(autoincrement())
   questionText    String
-  questionMark Float @default(1)
 
   question        Question @relation(fields: [questionId], references: [id])
   questionId      Int      @unique
@@ -187,9 +186,6 @@ model Option {
 model AnahoteQuestion {
   id           Int      @id @default(autoincrement())
   questionText String
-  questionMark Float @default(1)
-
-
 
   question     Question @relation(fields: [questionId], references: [id])
   questionId   Int      @unique
@@ -215,8 +211,6 @@ model SubQuestion {
   srijonshilQuestionId Int
 
   questionText         String
-  questionMark Float @default(1)
-
   hint                 String?
 }
 

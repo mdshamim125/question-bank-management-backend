@@ -1,8 +1,13 @@
 import prisma from '../../utils/prisma';
 import httpStatus from 'http-status';
 import AppError from '../../errors/AppError';
-import { ICreateQuestion, IUpdateQuestion } from './question.interface';
+import {
+  ICreateQuestion,
+  IUpdateQuestion,
+  QuestionFilters,
+} from './question.interface';
 import { ITokenUser } from '../../interface/auth.interface';
+import { calculatePagination } from '../../utils/calculatePagination';
 
 const createQuestion = async (payload: ICreateQuestion, user: ITokenUser) => {
   // ✅ Only check assignment if role is TEACHER
@@ -42,6 +47,7 @@ const createQuestion = async (payload: ICreateQuestion, user: ITokenUser) => {
         data: {
           questionId: question.id,
           questionText: payload.questionText,
+          questionMark: payload.questionMark,
           answerOptionId: 0, // temporary, updated later
         },
       });
@@ -75,6 +81,7 @@ const createQuestion = async (payload: ICreateQuestion, user: ITokenUser) => {
         data: {
           questionId: question.id,
           questionText: payload.questionText,
+          questionMark: payload.questionMark,
         },
       });
 
@@ -83,12 +90,27 @@ const createQuestion = async (payload: ICreateQuestion, user: ITokenUser) => {
 
     // 4️⃣ SRIJONSHIL
     if (payload.type === 'SRIJONSHIL') {
+      // const srijonshil = await tx.srijonshilQuestion.create({
+      //   data: {
+      //     questionId: question.id,
+      //     prompt: payload.prompt,
+      //     difficulty: payload.difficulty,
+      //     subQuestions: { create: payload.subQuestions },
+      //   },
+      //   include: { subQuestions: true },
+      // });
       const srijonshil = await tx.srijonshilQuestion.create({
         data: {
           questionId: question.id,
           prompt: payload.prompt,
           difficulty: payload.difficulty,
-          subQuestions: { create: payload.subQuestions },
+          subQuestions: {
+            create: payload.subQuestions.map(sq => ({
+              questionText: sq.questionText,
+              questionMark: sq.questionMark, // ✅ ADD
+              hint: sq.hint,
+            })),
+          },
         },
         include: { subQuestions: true },
       });
@@ -149,28 +171,40 @@ const updateQuestion = async (
     /* ---------- TYPE-SAFE UPDATES ---------- */
 
     if (payload.type === 'OBJECTIVE') {
-      if (payload.questionText) {
-        data.objective = {
-          update: { questionText: payload.questionText },
-        };
-      }
+      data.objective = {
+        update: {
+          ...(payload.questionText && { questionText: payload.questionText }),
+          ...(payload.questionMark && { questionMark: payload.questionMark }), // ✅
+        },
+      };
     }
 
     if (payload.type === 'ANAHOTE') {
-      if (payload.questionText) {
-        data.anahote = {
-          update: { questionText: payload.questionText },
-        };
-      }
-    }
-
-    if (payload.type === 'SRIJONSHIL') {
-      data.srijonshil = {
+      data.anahote = {
         update: {
-          ...(payload.prompt && { prompt: payload.prompt }),
-          ...(payload.difficulty && { difficulty: payload.difficulty }),
+          ...(payload.questionText && { questionText: payload.questionText }),
+          ...(payload.questionMark && { questionMark: payload.questionMark }), // ✅
         },
       };
+    }
+
+    if (payload.type === 'SRIJONSHIL' && payload.subQuestions) {
+      const srijonshil = await tx.srijonshilQuestion.findUnique({
+        where: { questionId },
+      });
+
+      await tx.subQuestion.deleteMany({
+        where: { srijonshilQuestionId: srijonshil!.id },
+      });
+
+      await tx.subQuestion.createMany({
+        data: payload.subQuestions.map(sq => ({
+          srijonshilQuestionId: srijonshil!.id,
+          questionText: sq.questionText!,
+          questionMark: sq.questionMark,
+          hint: sq.hint,
+        })),
+      });
     }
 
     const updatedQuestion = await tx.question.update({
@@ -252,6 +286,35 @@ const getQuestionsByClassSubjectChapter = async (
   });
 };
 
+// GET QUESTIONS WITH DYNAMIC FILTERING
+const getAllQuestionsWithFiltering = async (filters: {
+  classId?: number;
+  subjectId?: number;
+  chapterId?: number;
+  type?: string;
+}) => {
+  const where: any = {};
+
+  if (filters.classId) where.classId = filters.classId;
+  if (filters.subjectId) where.subjectId = filters.subjectId;
+  if (filters.chapterId) where.chapterId = filters.chapterId;
+  if (filters.type) where.type = filters.type;
+
+  return prisma.question.findMany({
+    where,
+    include: {
+      objective: { include: { options: true } },
+      anahote: true,
+      srijonshil: { include: { subQuestions: true } },
+      class: true,
+      subject: true,
+      chapter: true,
+      createdBy: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+};
+
 const deleteQuestion = async (questionId: number, user: ITokenUser) => {
   const question = await prisma.question.findUnique({
     where: { id: questionId },
@@ -324,9 +387,109 @@ const deleteQuestion = async (questionId: number, user: ITokenUser) => {
   });
 };
 
+const getAllQuestionsFromDBWithPagination = async (
+  filters: QuestionFilters,
+  options: any,
+) => {
+  const { page, limit, skip, sortBy, sortOrder } = calculatePagination(options);
+
+  const where: any = {};
+
+  // ✅ Filtering
+  if (filters.classId) where.classId = filters.classId;
+  if (filters.subjectId) where.subjectId = filters.subjectId;
+  if (filters.chapterId) where.chapterId = filters.chapterId;
+  if (filters.type) where.type = filters.type;
+
+  // ✅ Searching (Objective + Anahote + Srijonshil)
+  if (filters.search) {
+    where.OR = [
+      {
+        objective: {
+          questionText: {
+            contains: filters.search,
+            mode: 'insensitive',
+          },
+        },
+      },
+      {
+        anahote: {
+          questionText: {
+            contains: filters.search,
+            mode: 'insensitive',
+          },
+        },
+      },
+      {
+        srijonshil: {
+          prompt: {
+            contains: filters.search,
+            mode: 'insensitive',
+          },
+        },
+      },
+    ];
+  }
+
+  // ✅ Query
+  const data = await prisma.question.findMany({
+    where,
+    skip,
+    take: limit,
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
+    include: {
+      objective: { include: { options: true } },
+      anahote: true,
+      srijonshil: { include: { subQuestions: true } },
+      class: true,
+      subject: true,
+      chapter: true,
+      createdBy: true,
+    },
+  });
+
+  const total = await prisma.question.count({ where });
+
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+    },
+    data,
+  };
+};
+
+// GET QUESTION BY ID
+const getQuestionByIdFromDB = async (id: number) => {
+  return prisma.question.findUnique({
+    where: { id },
+    include: {
+      objective: { include: { options: true } },
+      anahote: true,
+      srijonshil: { include: { subQuestions: true } },
+      class: true,
+      subject: true,
+      chapter: true,
+      createdBy: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+};
+
 export const QuestionService = {
   createQuestion,
   updateQuestion,
   getQuestionsByClassSubjectChapter,
+  getAllQuestionsWithFiltering,
+  getAllQuestionsFromDBWithPagination,
   deleteQuestion,
+  getQuestionByIdFromDB,
 };

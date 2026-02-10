@@ -5,6 +5,7 @@ import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import { AuthServices } from './auth.service';
 import { ILogin, IRegister } from './auth.interface';
+import { setAuthCookie } from '../../utils/setCookie';
 
 const register = catchAsync(async (req: Request, res: Response) => {
   const payload: IRegister = req.body;
@@ -24,6 +25,12 @@ const register = catchAsync(async (req: Request, res: Response) => {
 const login = catchAsync(async (req: Request, res: Response) => {
   const payload: ILogin = req.body;
   const result = await AuthServices.login(payload);
+
+  console.log(result);
+
+  setAuthCookie(res, {
+    accessToken: result.accessToken,
+  });
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

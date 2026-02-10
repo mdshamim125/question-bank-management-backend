@@ -84,19 +84,9 @@ export const getAllTeacherAssignments = async () => {
 };
 
 // REMOVE ASSIGNMENT (teacher + subject + class)
-export const removeTeacherFromSubject = async (
-  teacherId: number,
-  subjectId: number,
-  classId: number,
-) => {
+export const removeTeacherFromSubject = async (id: number) => {
   const existing = await prisma.teacherSubject.findUnique({
-    where: {
-      teacherId_subjectId_classId: {
-        teacherId,
-        subjectId,
-        classId,
-      },
-    },
+    where: { id },
   });
 
   if (!existing) {
@@ -104,13 +94,7 @@ export const removeTeacherFromSubject = async (
   }
 
   return prisma.teacherSubject.delete({
-    where: {
-      teacherId_subjectId_classId: {
-        teacherId,
-        subjectId,
-        classId,
-      },
-    },
+    where: { id },
   });
 };
 

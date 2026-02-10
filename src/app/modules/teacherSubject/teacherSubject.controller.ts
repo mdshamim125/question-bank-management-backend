@@ -34,24 +34,20 @@ export const getAllAssignments = catchAsync(async (_req, res) => {
 });
 
 // REMOVE TEACHER FROM SUBJECT (WITH CLASS)
-export const removeAssignment = catchAsync(async (req: Request, res: Response) => {
-  const teacherId = Number(req.params.teacherId);
-  const subjectId = Number(req.params.subjectId);
-  const classId = Number(req.params.classId);
+export const removeAssignment = catchAsync(
+  async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
 
-  const result = await TeacherSubjectService.removeTeacherFromSubject(
-    teacherId,
-    subjectId,
-    classId,
-  );
+    const result = await TeacherSubjectService.removeTeacherFromSubject(id);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'Teacher removed from subject successfully',
-    data: result,
-  });
-});
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Teacher removed from subject successfully',
+      data: result,
+    });
+  },
+);
 
 // GET SUBJECTS BY TEACHER
 export const getTeacherSubjectsByTeacherId = catchAsync(

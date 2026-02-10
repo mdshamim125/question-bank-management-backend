@@ -18,10 +18,13 @@ router.post(
 router.get('/', TeacherSubjectController.getAllAssignments);
 
 // REMOVE TEACHER FROM SUBJECT
-router.delete(
-  '/:teacherId/:subjectId',
-  TeacherSubjectController.removeAssignment,
-);
+// router.delete(
+//   '/:teacherId/:subjectId',
+//   TeacherSubjectController.removeAssignment,
+// );
+
+router.delete("/:id", TeacherSubjectController.removeAssignment);
+
 
 // GET TEACHER'S SUBJECTS BY TEACHER ID
 router.get(

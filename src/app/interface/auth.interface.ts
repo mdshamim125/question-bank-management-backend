@@ -5,8 +5,6 @@ export interface ITokenUser {
   name: string;
   email: string;
   role: string;
-  classId: number;
-  subjectId: number;
 }
 
 export interface IDecodedUser extends JwtPayload, ITokenUser {}

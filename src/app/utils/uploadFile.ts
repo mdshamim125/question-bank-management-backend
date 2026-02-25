@@ -1,11 +1,10 @@
 import { S3Client, PutObjectCommand, PutObjectCommandInput } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from "uuid";
-import config from '../../config';
+import config from "../../config";
 
-// Initialize the S3 client for DigitalOcean Spaces
 const s3Client = new S3Client({
   endpoint: config.digitalOcean.endpoint,
-  region: "nyc3", // DigitalOcean Spaces uses nyc3 as region
+  region: "nyc3",
   credentials: {
     accessKeyId: config.digitalOcean.accessKeyId!,
     secretAccessKey: config.digitalOcean.secretAccessKey!,
@@ -16,52 +15,43 @@ interface UploadFileResponse {
   success: boolean;
   url?: string;
   error?: string;
+  fileName?: string;
+  fileType?: string;
 }
 
-export const uploadFile = async (file: Express.Multer.File): Promise<UploadFileResponse> => {
+export const uploadFile = async (
+  file: Express.Multer.File,
+  folder: "images" | "pdfs" | "docs" | "others" = "others"
+): Promise<UploadFileResponse> => {
   try {
-    if (!file) {
-      return { success: false, error: "No file provided" };
-    }
+    if (!file) return { success: false, error: "No file provided" };
 
-    // Generate unique filename
-    const fileExtension = file.originalname.split(".").pop();
-    const fileName = `files/${uuidv4()}.${fileExtension}`;
+    const ext = file.originalname.split(".").pop();
+    const uniqueName = `${folder}/${uuidv4()}.${ext}`;
 
-    // Define the upload parameters
     const uploadParams: PutObjectCommandInput = {
       Bucket: config.digitalOcean.bucket,
-      Key: fileName,
+      Key: uniqueName,
       Body: file.buffer,
       ContentType: file.mimetype,
-      ACL: 'public-read',
+      ACL: "public-read",
     };
 
-    // Upload the file to the Space
-    const command = new PutObjectCommand(uploadParams);
-    
-    try {
-      await s3Client.send(command);
+    await s3Client.send(new PutObjectCommand(uploadParams));
 
-      // Generate public URL
-      const imageUrl = `${config.digitalOcean.endpoint}/${config.digitalOcean.bucket}/${fileName}`;
+    const url = `${config.digitalOcean.endpoint}/${config.digitalOcean.bucket}/${uniqueName}`;
 
-      return {
-        success: true,
-        url: imageUrl,
-      };
-    } catch (uploadError) {
-      console.error("Error uploading image:", uploadError);
-      return {
-        success: false,
-        error: `DigitalOcean Spaces upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`,
-      };
-    }
-  } catch (error) {
-    console.error("Unexpected error in uploadImage:", error);
+    return {
+      success: true,
+      url,
+      fileName: uniqueName,
+      fileType: file.mimetype,
+    };
+  } catch (error: any) {
+    console.error("Upload failed:", error);
     return {
       success: false,
-      error: "Failed to upload image",
+      error: error.message || "Upload failed",
     };
   }
 };

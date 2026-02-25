@@ -3,8 +3,11 @@ import validateRequest from '../../middlewares/validateRequest';
 import { QuestionController } from './question.controller';
 import auth from '../../middlewares/auth';
 import { createQuestionSchema } from './question.validation';
+import multer from 'multer';
 
 const router = express.Router();
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 router.post(
   '/',
@@ -12,6 +15,7 @@ router.post(
   validateRequest(createQuestionSchema),
   QuestionController.createQuestion,
 );
+
 
 // GET questions by class, subject, and chapter
 // router.get(
@@ -51,6 +55,14 @@ router.get(
   '/:id',
   auth('TEACHER', 'ADMIN', 'SUPERADMIN'),
   QuestionController.getQuestionById,
+);
+
+// ─── UPLOAD GENERATED PDF / DOCX ─────────────────────────────────────────
+router.post(
+  '/question-papers',
+  auth('TEACHER', 'ADMIN', 'SUPERADMIN'),
+  upload.single('file'),
+  QuestionController.uploadGeneratedPaper, // New controller method
 );
 
 export const QuestionRoutes = router;

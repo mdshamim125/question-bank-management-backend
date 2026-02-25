@@ -8,6 +8,9 @@ import {
 } from './question.interface';
 import { ITokenUser } from '../../interface/auth.interface';
 import { calculatePagination } from '../../utils/calculatePagination';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
 
 const createQuestion = async (payload: ICreateQuestion, user: ITokenUser) => {
   // ✅ Only check assignment if role is TEACHER
@@ -484,6 +487,45 @@ const getQuestionByIdFromDB = async (id: number) => {
   });
 };
 
+interface IUploadPaperPayload {
+  file: Express.Multer.File;
+  title?: string;
+  questionIds?: number[];
+  user: ITokenUser;
+}
+
+const saveGeneratedPaper = async (payload: IUploadPaperPayload) => {
+  const { file, title, questionIds, user } = payload;
+
+  const uploadFolder = path.join(__dirname, '../../uploads/question-papers');
+  if (!fs.existsSync(uploadFolder))
+    fs.mkdirSync(uploadFolder, { recursive: true });
+
+  const filename = `${uuidv4()}-${file.originalname}`;
+  const filepath = path.join(uploadFolder, filename);
+  fs.writeFileSync(filepath, file.buffer);
+
+  const saved = await prisma.questionPaper.create({
+    data: {
+      title: title || 'Generated Paper',
+      fileUrl: filepath,
+      fileType: file.mimetype,
+      createdById: user.id as number,
+      questions: questionIds?.length
+        ? { connect: questionIds.map(id => ({ id })) }
+        : undefined,
+    },
+    include: {
+      createdBy: {
+        select: { id: true, name: true, email: true },
+      },
+      questions: true,
+    },
+  });
+
+  return saved;
+};
+
 export const QuestionService = {
   createQuestion,
   updateQuestion,
@@ -492,4 +534,5 @@ export const QuestionService = {
   getAllQuestionsFromDBWithPagination,
   deleteQuestion,
   getQuestionByIdFromDB,
+  saveGeneratedPaper,
 };

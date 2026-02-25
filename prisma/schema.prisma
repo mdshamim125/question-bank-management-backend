@@ -21,6 +21,7 @@ model User {
   teacherSubjects TeacherSubject[]
 
   questions Question[]
+  questionPapers QuestionPaper[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -147,6 +148,10 @@ classId      Int?
   anahote      AnahoteQuestion?
   srijonshil   SrijonshilQuestion?
 
+  // ✅ opposite relation for pivot table
+  paperQuestions QuestionPaperQuestion[]
+
+
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -237,7 +242,38 @@ model QuestionHeader {
   duration   String
   fullMark   Int
   remark    String?
+    questionPapers QuestionPaper[] // ✅ opposite relation
+
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+
+model QuestionPaper {
+  id        Int      @id @default(autoincrement())
+  title     String
+
+  header    QuestionHeader? @relation(fields: [headerId], references: [id])
+  headerId  Int?
+
+  createdBy User @relation(fields: [createdById], references: [id])
+  createdById Int
+
+  questions QuestionPaperQuestion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuestionPaperQuestion {
+  id              Int @id @default(autoincrement())
+  questionPaper   QuestionPaper @relation(fields: [questionPaperId], references: [id])
+  questionPaperId Int
+
+  question        Question @relation(fields: [questionId], references: [id])
+  questionId      Int
+
+  order           Int      // Question order in paper
+  customMark      Float?   // Override mark if needed
 }
 

@@ -160,6 +160,34 @@ const getQuestionById = catchAsync(async (req, res) => {
   });
 });
 
+// ─── UPLOAD GENERATED PAPER ───────────────────────────────
+const uploadGeneratedPaper = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user as ITokenUser;
+  if (!user)
+    throw new AppError(httpStatus.UNAUTHORIZED, 'User not authenticated');
+
+  const file = req.file;
+  if (!file) throw new AppError(httpStatus.BAD_REQUEST, 'No file uploaded');
+
+  // Optional: accept question IDs from frontend
+  const questionIds: number[] = req.body.questionIds
+    ? JSON.parse(req.body.questionIds)
+    : [];
+
+  const result = await QuestionService.saveGeneratedPaper({
+    file,
+    title: req.body.title,
+    questionIds,
+    user,
+  });
+
+  res.status(httpStatus.CREATED).json({
+    success: true,
+    message: 'Generated paper uploaded successfully',
+    data: result,
+  });
+});
+
 export const QuestionController = {
   createQuestion,
   getQuestionsBySubjectAndChapter,
@@ -168,4 +196,5 @@ export const QuestionController = {
   getAllQuestionsFromDBWithPagination,
   deleteQuestion,
   getQuestionById,
+  uploadGeneratedPaper,
 };
